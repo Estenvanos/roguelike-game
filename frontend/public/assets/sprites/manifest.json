@@ -1,0 +1,25 @@
+{
+  "_comment": "Descritor de render por tipo. Sem 'src' => desenha placeholder procedural (forma+cor). Com 'src' => carrega o PNG (caminho relativo a /assets/sprites/). Trocar arte real depois = por o PNG na pasta e apontar 'src' aqui. Nenhuma mudança de código.",
+  "sprites": {
+    "player": { "w": 32, "h": 32, "shape": "circle", "color": "#ff6b35" },
+
+    "clown-balloon": { "w": 30, "h": 30, "shape": "balloon", "color": "#f85149" },
+    "loose-marionette": { "w": 28, "h": 34, "shape": "cross", "color": "#8b949e" },
+    "ghost-popcorn": { "w": 30, "h": 30, "shape": "ghost", "color": "#f7c948" },
+
+    "rusty-strongman": { "w": 40, "h": 40, "shape": "square", "color": "#a15c2b" },
+    "shadow-contortionist": { "w": 26, "h": 34, "shape": "diamond", "color": "#bc8cff" },
+    "faceless-tamer": { "w": 34, "h": 34, "shape": "triangle", "color": "#39c5cf" },
+
+    "knife-juggler": { "w": 32, "h": 32, "shape": "star", "color": "#58a6ff" },
+    "mirror-twins": { "w": 30, "h": 30, "shape": "diamond", "color": "#c9d1d9" },
+    "the-audience": { "w": 28, "h": 28, "shape": "ghost", "color": "#6e7681" },
+
+    "the-impresario": { "w": 56, "h": 56, "shape": "star", "color": "#bc8cff" },
+
+    "applause": { "w": 16, "h": 16, "shape": "star", "color": "#f7c948" },
+    "weapon-upgrade": { "w": 18, "h": 18, "shape": "triangle", "color": "#3fb950" },
+    "mirror-clone": { "w": 18, "h": 18, "shape": "diamond", "color": "#58a6ff" },
+    "fortune-wheel": { "w": 18, "h": 18, "shape": "circle", "color": "#ff6b35" }
+  }
+}
