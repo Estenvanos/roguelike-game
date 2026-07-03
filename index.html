@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Jogo Horda — Prediction & Reconciliation</title>
+  <style>
+    :root {
+      --bg: #0d1117; --panel: #161b22; --border: #2a3140;
+      --text: #e6edf3; --muted: #8b949e; --accent: #ff6b35;
+      --green: #3fb950; --red: #f85149; --accent-2: #f7c948; --blue: #58a6ff;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Segoe UI", system-ui, sans-serif;
+      background: radial-gradient(1200px 600px at 80% -10%, #1a1410 0%, transparent 60%), var(--bg);
+      color: var(--text); min-height: 100vh; padding: 20px;
+      display: flex; flex-direction: column; align-items: center; gap: 14px;
+    }
+    header { display: flex; align-items: center; gap: 14px; }
+    .logo {
+      width: 44px; height: 44px; border-radius: 12px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      display: grid; place-items: center; font-size: 24px;
+      box-shadow: 0 6px 20px rgba(255,107,53,.35);
+    }
+    h1 { font-size: 20px; }
+    h1 span { color: var(--muted); font-weight: 400; font-size: 13px; display: block; }
+
+    .bar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; justify-content: center; }
+    .pill {
+      display: flex; align-items: center; gap: 8px;
+      padding: 7px 14px; border-radius: 999px;
+      background: var(--panel); border: 1px solid var(--border);
+      font-size: 13px; font-weight: 600;
+    }
+    .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--muted); }
+    .dot.on { background: var(--green); box-shadow: 0 0 10px var(--green); }
+    .dot.off { background: var(--red); }
+    .pill b { color: var(--accent-2); }
+    .pill.ctrl { gap: 10px; }
+    .pill input[type=range] { accent-color: var(--accent); }
+    .pill label { color: var(--muted); font-weight: 600; display: flex; align-items: center; gap: 6px; cursor: pointer; }
+
+    canvas {
+      background: #0a0e14; border: 1px solid var(--border); border-radius: 14px;
+      box-shadow: 0 10px 40px rgba(0,0,0,.5); max-width: 100%;
+    }
+    .hint { color: var(--muted); font-size: 13px; text-align: center; max-width: 800px; }
+    .hint b { color: var(--text); }
+    kbd {
+      background: var(--panel); border: 1px solid var(--border); border-bottom-width: 2px;
+      border-radius: 6px; padding: 2px 8px; font-family: ui-monospace, monospace; font-size: 12px;
+    }
+    .legend { display: flex; gap: 18px; font-size: 12px; color: var(--muted); flex-wrap: wrap; justify-content: center; }
+    .legend span { display: flex; align-items: center; gap: 6px; }
+    .swatch { width: 14px; height: 14px; border-radius: 50%; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="logo">🧟</div>
+    <div><h1>Jogo Horda <span>Client Prediction + Server Reconciliation</span></h1></div>
+  </header>
+
+  <div class="bar">
+    <div class="pill"><span class="dot off" id="dot"></span><span id="statusText">Desconectado</span></div>
+    <div class="pill">Players: <b id="statPlayers">0</b></div>
+    <div class="pill">Tick srv: <b id="statTick">—</b></div>
+    <div class="pill">Buffer pendente: <b id="statBuffer">0</b></div>
+    <div class="pill">Último ack: <b id="statAck">0</b></div>
+  </div>
+
+  <div class="bar">
+    <div class="pill ctrl">
+      <label>Lag simulado: <b id="lagVal" style="color:var(--accent-2)">120</b> ms/lado</label>
+      <input type="range" id="lag" min="0" max="400" step="10" value="120" />
+    </div>
+    <div class="pill ctrl">
+      <label><input type="checkbox" id="predToggle" checked /> Prediction ligada</label>
+    </div>
+    <div class="pill ctrl">
+      <label><input type="checkbox" id="interpToggle" checked /> Interpolação (outros)</label>
+    </div>
+  </div>
+
+  <canvas id="game" width="800" height="600"></canvas>
+
+  <div class="legend">
+    <span><span class="swatch" style="background:var(--accent);opacity:1"></span> você (previsto — responde na hora)</span>
+    <span><span class="swatch" style="background:var(--accent);opacity:.25;border:2px dashed #fff"></span> onde o servidor te vê (atrasado pelo lag)</span>
+  </div>
+  <div class="hint">
+    Mova com <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd>. Aumente o <b>lag</b> e <b>desligue a prediction</b>:
+    o boneco vira gelo (só anda quando o servidor responde). Ligue de novo: responde instantâneo, e o fantasma
+    tracejado mostra o servidor te "alcançando".
+  </div>
+  <div class="hint">
+    Abra <b>uma segunda aba</b> pra ter outro jogador. Mova ela e olhe aqui:
+    com <b>interpolação ligada</b> o outro desliza suave; <b>desligada</b>, pula a cada 33ms (picotado).
+    O outro aparece ~100ms atrasado — preço da fluidez.
+  </div>
+
+  <script>
+    // =====================================================================
+    // CONSTANTES — precisam BATER com o servidor (backend/src/config.js).
+    // Se divergirem, a predição não fecha com o servidor e o boneco treme.
+    // =====================================================================
+    const WORLD = { w: 800, h: 600 };
+    const SPEED = 4;      // px por input (== PLAYER.speed no servidor)
+    const RADIUS = 16;    // == PLAYER.radius
+    const TICK_MS = 1000 / 30; // cliente amostra input 30x/s, igual ao servidor
+
+    const $ = (id) => document.getElementById(id);
+    const canvas = $("game");
+    const ctx = canvas.getContext("2d");
+
+    // ----- estado de rede / jogo -----
+    let ws = null;
+    let myId = null;
+    let serverPlayers = {}; // último snapshot do servidor (todos os players)
+
+    // ----- prediction (só do MEU player) -----
+    let predicted = null;   // {x,y} posição que EU desenho, prevista localmente
+    let seq = 0;            // numerador de inputs
+    let pending = [];       // inputs enviados ainda NÃO confirmados pelo servidor
+
+    const keys = { w: false, a: false, s: false, d: false };
+
+    // ----- interpolação dos OUTROS players -----
+    // Pra cada player remoto guardo um histórico de posições com timestamp
+    // local. No render desenho num tempo ATRASADO (agora - INTERP_DELAY),
+    // interpolando entre as duas posições que cercam esse instante.
+    const remoteBuffers = {}; // id -> [ { t, x, y, color } ]
+    const INTERP_DELAY = 100; // ms no passado (~3 ticks) — folga contra jitter
+
+    // controles didáticos
+    let SIM_LAG = 120;      // ms de atraso artificial em CADA sentido
+    let predictionOn = true;
+    let interpOn = true;
+
+    // =====================================================================
+    // applyMove: MESMA função do servidor. Move UM input. Determinística.
+    // É o que permite reaplicar (replay) os inputs pendentes e cair no mesmo
+    // lugar que o servidor cairia.
+    // =====================================================================
+    function applyMove(p, k) {
+      if (k.w) p.y -= SPEED;
+      if (k.s) p.y += SPEED;
+      if (k.a) p.x -= SPEED;
+      if (k.d) p.x += SPEED;
+      p.x = Math.max(RADIUS, Math.min(WORLD.w - RADIUS, p.x));
+      p.y = Math.max(RADIUS, Math.min(WORLD.h - RADIUS, p.y));
+    }
+
+    // =====================================================================
+    // REDE — com lag artificial nos dois sentidos pra prediction ficar visível.
+    // =====================================================================
+    function netSend(obj) {
+      const data = JSON.stringify(obj);
+      setTimeout(() => { if (ws && ws.readyState === WebSocket.OPEN) ws.send(data); }, SIM_LAG);
+    }
+
+    function setStatus(on) {
+      $("dot").className = "dot " + (on ? "on" : "off");
+      $("statusText").textContent = on ? "Conectado" : "Desconectado";
+    }
+
+    function connect() {
+      ws = new WebSocket("ws://localhost:3000");
+      ws.onopen = () => setStatus(true);
+      ws.onclose = () => { setStatus(false); setTimeout(connect, 1000); };
+      ws.onerror = () => {};
+      ws.onmessage = (ev) => {
+        // Atraso artificial na CHEGADA também (downstream lag).
+        const raw = ev.data;
+        setTimeout(() => {
+          let msg; try { msg = JSON.parse(raw); } catch { return; }
+          if (msg.type === "welcome") {
+            myId = msg.id;
+            Object.assign(WORLD, msg.world);
+            canvas.width = WORLD.w; canvas.height = WORLD.h;
+          } else if (msg.type === "state") {
+            onServerState(msg);
+          }
+        }, SIM_LAG);
+      };
+    }
+
+    // =====================================================================
+    // RECONCILIATION — coração do sistema. Roda a cada snapshot do servidor.
+    // =====================================================================
+    function onServerState(msg) {
+      serverPlayers = msg.players;
+      $("statTick").textContent = msg.tick;
+      $("statPlayers").textContent = Object.keys(msg.players).length;
+
+      // Empilha a posição de cada OUTRO player com o horário de chegada.
+      // É esse histórico que a interpolação consome no render.
+      const now = performance.now();
+      for (const id in msg.players) {
+        if (id === myId) continue;
+        const sp = msg.players[id];
+        (remoteBuffers[id] ||= []).push({ t: now, x: sp.x, y: sp.y, color: sp.color });
+        if (remoteBuffers[id].length > 60) remoteBuffers[id].shift(); // ~2s de histórico
+      }
+      // Limpa buffer de quem desconectou.
+      for (const id in remoteBuffers) if (!msg.players[id]) delete remoteBuffers[id];
+
+      const me = msg.players[myId];
+      if (!me) return;
+
+      // 1) Primeira vez: nasce a posição prevista onde o servidor diz.
+      if (!predicted) predicted = { x: me.x, y: me.y };
+
+      // 2) SNAP: joga a posição prevista na posição AUTORITATIVA do servidor.
+      //    Essa posição é "velha" — corresponde ao input de número me.lastSeq.
+      predicted.x = me.x;
+      predicted.y = me.y;
+
+      // 3) FILTRA O BUFFER: o servidor confirmou tudo até me.lastSeq.
+      //    Descarta esses; sobram só os inputs que ele ainda não viu.
+      pending = pending.filter((input) => input.seq > me.lastSeq);
+
+      // 4) REAPLICA (replay) os inputs restantes por cima da posição do servidor.
+      //    Resultado: a correção do servidor + tudo que apertei depois. Sem
+      //    perder responsividade, e sem "voltar no tempo" visível.
+      if (predictionOn) {
+        for (const input of pending) applyMove(predicted, input.keys);
+      }
+
+      $("statBuffer").textContent = pending.length;
+      $("statAck").textContent = me.lastSeq;
+    }
+
+    // =====================================================================
+    // LOOP DO CLIENTE — 30x/s amostra o input, prevê local, guarda e envia.
+    // =====================================================================
+    function clientTick() {
+      if (!myId || !predicted) return; // espera o primeiro state
+
+      const input = { seq: ++seq, keys: { ...keys } };
+
+      // Predição: aplica JÁ na posição local. Zero espera pelo servidor.
+      if (predictionOn) applyMove(predicted, input.keys);
+
+      // Guarda no buffer (pra reconciliation) e envia numerado.
+      pending.push(input);
+      netSend({ type: "input", seq: input.seq, keys: input.keys });
+      $("statBuffer").textContent = pending.length;
+    }
+    setInterval(clientTick, TICK_MS);
+
+    // =====================================================================
+    // INPUT (teclado)
+    // =====================================================================
+    const MAP = { w:"w", a:"a", s:"s", d:"d", arrowup:"w", arrowleft:"a", arrowdown:"s", arrowright:"d" };
+    window.addEventListener("keydown", (e) => {
+      const k = MAP[e.key.toLowerCase()]; if (!k) return;
+      e.preventDefault(); keys[k] = true;
+    });
+    window.addEventListener("keyup", (e) => {
+      const k = MAP[e.key.toLowerCase()]; if (!k) return;
+      keys[k] = false;
+    });
+    window.addEventListener("blur", () => { for (const k in keys) keys[k] = false; });
+
+    $("lag").addEventListener("input", (e) => { SIM_LAG = +e.target.value; $("lagVal").textContent = SIM_LAG; });
+    $("predToggle").addEventListener("change", (e) => { predictionOn = e.target.checked; });
+    $("interpToggle").addEventListener("change", (e) => { interpOn = e.target.checked; });
+
+    // =====================================================================
+    // RENDER — desenha o último estado. Meu player usa a posição PREVISTA;
+    // os outros usam a posição do servidor direto. Fantasma = servidor.
+    // =====================================================================
+    function drawCircle(x, y, color, opts = {}) {
+      ctx.beginPath();
+      ctx.arc(x, y, RADIUS, 0, Math.PI * 2);
+      ctx.globalAlpha = opts.alpha ?? 1;
+      ctx.fillStyle = color;
+      ctx.fill();
+      if (opts.dashed) { ctx.setLineDash([5, 4]); ctx.lineWidth = 2; ctx.strokeStyle = "#fff"; ctx.stroke(); ctx.setLineDash([]); }
+      else if (opts.ring) { ctx.lineWidth = 3; ctx.strokeStyle = "#fff"; ctx.stroke(); }
+      ctx.globalAlpha = 1;
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.strokeStyle = "#141a24"; ctx.lineWidth = 1;
+      for (let x = 0; x < canvas.width; x += 40) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,canvas.height); ctx.stroke(); }
+      for (let y = 0; y < canvas.height; y += 40) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(canvas.width,y); ctx.stroke(); }
+
+      for (const id in serverPlayers) {
+        const sp = serverPlayers[id];
+        if (id === myId) {
+          // fantasma = onde o servidor me vê (atrasado)
+          drawCircle(sp.x, sp.y, sp.color, { alpha: 0.25, dashed: true });
+          // sólido = minha posição prevista (instantânea)
+          const p = predicted || sp;
+          drawCircle(p.x, p.y, sp.color, { ring: true });
+          label("você", p.x, p.y);
+        } else {
+          const buf = remoteBuffers[id];
+          // Interpolação ligada: posição no passado interpolada (fluido).
+          // Desligada: última posição recebida crua (picotado a cada 33ms).
+          const pos = interpOn
+            ? sampleInterpolated(buf, performance.now() - INTERP_DELAY)
+            : (buf && buf[buf.length - 1]);
+          const p = pos || sp;
+          drawCircle(p.x, p.y, sp.color);
+          label(id.slice(0, 4), p.x, p.y);
+        }
+      }
+      requestAnimationFrame(draw);
+    }
+    // Acha a posição do player remoto em renderTime (um instante no passado),
+    // interpolando linearmente entre as duas amostras que o cercam.
+    function sampleInterpolated(buf, renderTime) {
+      if (!buf || buf.length === 0) return null;
+      // renderTime antes de tudo que temos: segura na amostra mais antiga.
+      if (renderTime <= buf[0].t) return buf[0];
+      // Procura o par a..b tal que a.t <= renderTime <= b.t e faz o lerp.
+      for (let i = 0; i < buf.length - 1; i++) {
+        const a = buf[i], b = buf[i + 1];
+        if (renderTime <= b.t) {
+          const span = b.t - a.t;
+          const alpha = span > 0 ? (renderTime - a.t) / span : 1; // 0..1 entre a e b
+          return {
+            x: a.x + (b.x - a.x) * alpha,
+            y: a.y + (b.y - a.y) * alpha,
+            color: b.color,
+          };
+        }
+      }
+      // renderTime além da última amostra (ainda sem dado futuro): segura na última.
+      return buf[buf.length - 1];
+    }
+
+    function label(txt, x, y) {
+      ctx.globalAlpha = 1; ctx.fillStyle = "#e6edf3";
+      ctx.font = "11px ui-monospace, monospace"; ctx.textAlign = "center";
+      ctx.fillText(txt, x, y - RADIUS - 6);
+    }
+
+    connect();
+    requestAnimationFrame(draw);
+  </script>
+</body>
+</html>
