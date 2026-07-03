@@ -93,11 +93,11 @@ Este projeto não é só um jogo — é um estudo aplicado de **sistemas distrib
 ## 🗺️ Roadmap de desenvolvimento
 
 - [x] Setup WebSocket + Express
-- [ ] Tick loop de timestep fixo no servidor
-- [ ] Estado do jogo + broadcast básico
-- [ ] Client-side prediction
-- [ ] Server reconciliation
-- [ ] Entity interpolation (outros jogadores)
+- [x] Tick loop de timestep fixo no servidor
+- [x] Estado do jogo + broadcast básico
+- [x] Client-side prediction
+- [x] Server reconciliation
+- [x] Entity interpolation (outros jogadores)
 - [ ] Combate autoritativo (hit detection no servidor)
 - [ ] Sistema de hordas por ato (IA server-side)
 - [ ] Sistema de Aplausos + barracas de upgrade
