@@ -149,3 +149,560 @@ kbd {
   font-family: ui-monospace, monospace;
   font-size: 12px;
 }
+
+/* =========================================================================
+   Tela de entrada — "Tenda Principal"
+   Paleta circense dessaturada (vars locais, não afetam o tema do jogo).
+   ========================================================================= */
+:root {
+  --cs-crimson: #8f1d1d;
+  --cs-crimson-hot: #b3122b;
+  --cs-mustard: #c9a227;
+  --cs-purple: #2a1533;
+  --cs-purple-2: #4a1e5c;
+  --cs-sick-green: #7d8c3a;
+  --cs-ink: #0a0608;
+}
+
+.entry-screen {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  max-width: 460px;
+}
+
+/* fundo full-bleed atrás de todo o #root (CSS puro, sem SVG) */
+.entry-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  background: radial-gradient(
+    1200px 720px at 50% -12%,
+    #3a1a44 0%,
+    #2a1533 42%,
+    var(--cs-ink) 100%
+  );
+}
+/* vinheta escura nas bordas */
+.entry-backdrop::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    75% 65% at 50% 42%,
+    transparent 58%,
+    rgba(0, 0, 0, 0.82) 100%
+  );
+}
+
+/* holofotes verde-doentio: cunhas com clip-path varrendo o céu */
+.entry-beam {
+  position: absolute;
+  bottom: -8%;
+  left: 50%;
+  width: min(46vw, 360px);
+  height: 128%;
+  transform-origin: 50% 100%;
+  clip-path: polygon(44% 100%, 56% 100%, 100% 0, 0 0);
+  background: linear-gradient(
+    to top,
+    rgba(125, 140, 58, 0.36),
+    rgba(125, 140, 58, 0.05) 60%,
+    transparent 85%
+  );
+  filter: blur(6px);
+  mix-blend-mode: screen;
+  transform: translateX(-50%); /* base; keyframes reaplicam junto com rotate */
+  will-change: transform;
+}
+.entry-beam.a {
+  animation: cs-beam-a 11s ease-in-out infinite alternate;
+}
+.entry-beam.b {
+  left: 44%;
+  animation: cs-beam-b 13s ease-in-out infinite alternate;
+}
+
+/* ---- letreiro (marquee) atrás do título ---- */
+/* Moldura creme com fileira de lâmpadas na volta + painel vermelho quilted. */
+.entry-marquee {
+  --bulb: radial-gradient(
+    circle,
+    #fff2c2 0 24%,
+    #f0c552 42%,
+    #a9791f 60%,
+    transparent 66%
+  );
+  position: relative;
+  padding: 20px; /* espessura da moldura onde ficam as lâmpadas */
+  border-radius: 16px;
+  background: linear-gradient(180deg, #efe0b4, #d8c48c); /* moldura creme */
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.6),
+    inset 0 0 0 2px rgba(0, 0, 0, 0.15);
+  transform: rotate(-0.6deg);
+}
+/* colunas esquerda/direita: donas dos 4 cantos (uma lâmpada por canto) */
+.entry-marquee::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: var(--bulb) left / 26px 26px no-repeat space,
+    var(--bulb) right / 26px 26px no-repeat space;
+}
+/* linhas topo/base: inset 26px p/ ficarem ENTRE as lâmpadas de canto */
+.entry-marquee::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 26px;
+  right: 26px;
+  pointer-events: none;
+  background: var(--bulb) top / 26px 26px space no-repeat,
+    var(--bulb) bottom / 26px 26px space no-repeat;
+}
+.entry-marquee-inner {
+  border-radius: 8px;
+  padding: 14px 30px;
+  /* painel vermelho com estofado em losango (quilting) */
+  background: repeating-linear-gradient(
+      45deg,
+      transparent 0 21px,
+      rgba(0, 0, 0, 0.16) 21px 23px
+    ),
+    repeating-linear-gradient(
+      -45deg,
+      transparent 0 21px,
+      rgba(0, 0, 0, 0.16) 21px 23px
+    ),
+    radial-gradient(120% 120% at 50% 0%, #b3182088 0%, transparent 60%),
+    linear-gradient(180deg, #a3161d, #7a0e15);
+  box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.55),
+    inset 0 0 0 3px rgba(0, 0, 0, 0.25);
+}
+
+/* letreiro de circo: fonte caricata (Titan One) com contorno e glow de neon */
+.entry-title {
+  font-family: "Titan One", "Cooper Black", Georgia, serif;
+  font-size: clamp(28px, 6.5vw, 44px);
+  line-height: 1.05;
+  letter-spacing: 1px;
+  text-align: center;
+  color: #ffe9a8;
+  -webkit-text-stroke: 1.5px #4a0a0f;
+  paint-order: stroke fill;
+  text-shadow: 0 2px 0 #4a0a0f, 0 0 10px rgba(255, 210, 120, 0.65),
+    0 0 26px rgba(201, 162, 39, 0.45);
+  animation: cs-neon 5s linear infinite;
+}
+.entry-tagline {
+  color: var(--muted);
+  font-size: 13px;
+  font-style: italic;
+  text-align: center;
+  max-width: 360px;
+}
+
+/* ---- moldura de bilheteria (CSS puro) ---- */
+.entry-frame {
+  --edge: #8a6a1e; /* borda dourada; muda por estado */
+  position: relative;
+  width: 100%;
+  max-width: 400px;
+  transform: rotate(-1.2deg); /* assimetria proposital */
+  border: 4px solid var(--edge);
+  border-radius: 12px;
+  /* madeira remendada: tábuas verticais desencontradas */
+  background: repeating-linear-gradient(
+      90deg,
+      #3a2417 0 24px,
+      #31200f 24px 48px
+    ),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent 40%);
+  box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.55),
+    0 14px 34px rgba(0, 0, 0, 0.6);
+  transition: border-color 0.25s ease, box-shadow 0.25s ease;
+}
+.entry-frame.is-focus {
+  --edge: var(--cs-mustard);
+  box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.55),
+    0 0 20px rgba(201, 162, 39, 0.4), 0 14px 34px rgba(0, 0, 0, 0.6);
+}
+.entry-frame.is-error {
+  --edge: var(--red);
+  animation: cs-shake 0.4s ease;
+}
+
+/* toldo listrado com babado escalopado */
+.entry-awning {
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  right: -4px;
+  height: 30px;
+  border-radius: 10px 10px 0 0;
+  background: repeating-linear-gradient(
+    90deg,
+    var(--cs-crimson) 0 26px,
+    #e7d6a8 26px 52px
+  );
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+.entry-awning::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -13px;
+  height: 15px;
+  background: radial-gradient(
+      circle at 13px -3px,
+      var(--cs-crimson) 12px,
+      transparent 13px
+    )
+    repeat-x;
+  background-size: 26px 15px;
+}
+
+.entry-frame-content {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  /* padding respeita o toldo (topo) e a madeira (laterais/base) */
+  padding: 52px 34px 34px;
+  transform: rotate(1.2deg); /* endireita o conteúdo dentro da moldura torta */
+}
+
+.entry-label {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--cs-mustard);
+}
+.entry-input {
+  font: inherit;
+  font-size: 16px;
+  color: #f3e3c3;
+  background: rgba(10, 6, 8, 0.85);
+  border: 1px solid rgba(201, 162, 39, 0.5);
+  border-radius: 8px;
+  padding: 11px 13px;
+  caret-color: var(--cs-mustard);
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.entry-input::placeholder {
+  color: #7a6a52;
+  font-style: italic;
+}
+.entry-input:focus {
+  border-color: var(--cs-mustard);
+  box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.18);
+}
+.entry-input.is-error {
+  border-color: var(--red);
+  animation: cs-red-blink 0.5s steps(2, jump-none) 3;
+}
+
+.entry-error {
+  min-height: 16px;
+  margin-top: -2px;
+  font-size: 12px;
+  color: var(--red);
+  opacity: 0;
+  transform: translateY(-2px);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+.entry-error.show {
+  opacity: 1;
+  transform: translateY(0);
+  animation: cs-red-blink 0.5s steps(2, jump-none) 3;
+}
+
+.entry-frame-content .btn {
+  margin-top: 4px;
+}
+
+/* ---- cortina de veludo (loading) ---- */
+.entry-curtain {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  pointer-events: none;
+}
+.entry-curtain-half {
+  width: 50%;
+  height: 100%;
+  background: repeating-linear-gradient(
+    90deg,
+    #5a0d12 0,
+    #7d1620 22px,
+    #4a0a0f 44px
+  );
+  box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.7);
+  transition: transform 0.6s cubic-bezier(0.7, 0, 0.3, 1);
+}
+.entry-curtain-half.left {
+  transform: translateX(-101%);
+}
+.entry-curtain-half.right {
+  transform: translateX(101%);
+}
+.entry-curtain.closing .entry-curtain-half.left,
+.entry-curtain.closing .entry-curtain-half.right {
+  transform: translateX(0);
+}
+
+/* ---- animações do backdrop (divs CSS) ---- */
+/* holofotes varrendo: translateX(-50%) mantém a centralização durante o giro */
+@keyframes cs-beam-a {
+  from { transform: translateX(-50%) rotate(-16deg); }
+  to   { transform: translateX(-50%) rotate(10deg); }
+}
+@keyframes cs-beam-b {
+  from { transform: translateX(-50%) rotate(14deg); }
+  to   { transform: translateX(-50%) rotate(-12deg); }
+}
+
+/* letreiro de neon com defeito: piscadas irregulares */
+@keyframes cs-neon {
+  0%, 18%, 22%, 55%, 100% { opacity: 1; }
+  20%, 56% { opacity: 0.72; }
+  63% { opacity: 0.5; }
+  64% { opacity: 0.9; }
+}
+
+@keyframes cs-shake {
+  0%, 100% { transform: rotate(-1.2deg) translateX(0); }
+  20% { transform: rotate(-1.2deg) translateX(-7px); }
+  40% { transform: rotate(-1.2deg) translateX(6px); }
+  60% { transform: rotate(-1.2deg) translateX(-4px); }
+  80% { transform: rotate(-1.2deg) translateX(3px); }
+}
+@keyframes cs-red-blink {
+  0%, 100% { border-color: var(--red); opacity: 1; }
+  50% { border-color: #ff8a80; opacity: 0.55; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .entry-beam.a,
+  .entry-beam.b,
+  .entry-title,
+  .entry-input.is-error,
+  .entry-error.show,
+  .entry-frame.is-error {
+    animation: none;
+  }
+  .entry-curtain-half {
+    transition-duration: 0.2s;
+  }
+}
+
+
+/* =========================================================================
+   Login "Title Screen Pixel-Art" — cena SVG full-bleed (PixelScene) +
+   título e form em estilo pixel à esquerda (referência: menu do ARCO).
+   Prefixo: .pixel-* | keyframes pxl-*
+   ========================================================================= */
+:root {
+  --pxl-ink: #0b0f08;
+  --pxl-cream: #efeadc;
+  --pxl-moss: #a8c060;
+  --pxl-moss-dim: #66743a;
+  --pxl-line: #39482a;
+  --pxl-red: #ff6b5e;
+  --pxl-gold: #e0b34a;
+}
+
+.pixel-screen {
+  position: fixed;
+  inset: 0;
+  overflow: hidden auto;
+  background: var(--pxl-ink) url("/assets/fundo.png") center bottom / cover no-repeat;
+  image-rendering: pixelated;
+  color: var(--pxl-cream);
+  font-family: "VT323", ui-monospace, monospace;
+}
+
+/* scrim: escurece a esquerda (área do título/form) e o rodapé pra dar contraste */
+.pixel-screen::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, rgba(4, 8, 4, 0.85) 0%, rgba(4, 8, 4, 0.55) 34%, transparent 62%),
+    linear-gradient(to top, rgba(4, 8, 4, 0.45), transparent 30%);
+}
+
+.pixel-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  width: min(400px, 100%);
+  min-height: 100%;
+  padding: clamp(24px, 6vh, 56px) clamp(20px, 5vw, 56px);
+  justify-content: center;
+}
+
+/* ---- título estilo ARCO: pixel font + sombra dura ---- */
+.pixel-title {
+  font-family: "Press Start 2P", "Titan One", monospace;
+  font-size: clamp(20px, 4.2vw, 34px);
+  line-height: 1.35;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--pxl-cream);
+  text-shadow: 4px 4px 0 #000, 8px 8px 0 rgba(0, 0, 0, 0.35);
+}
+.pixel-tagline {
+  margin-top: 12px;
+  font-size: 19px;
+  color: var(--pxl-moss);
+  text-shadow: 2px 2px 0 #000;
+}
+
+/* ---- form ---- */
+.pixel-content form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.pixel-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.pixel-label {
+  font-family: "Press Start 2P", monospace;
+  font-size: 10px;
+  text-transform: uppercase;
+  color: var(--pxl-moss);
+  text-shadow: 2px 2px 0 #000;
+}
+.pixel-input {
+  font: inherit;
+  font-size: 20px;
+  min-height: 44px;
+  padding: 8px 12px;
+  color: var(--pxl-cream);
+  background: rgba(6, 10, 4, 0.78);
+  border: 3px solid var(--pxl-line);
+  border-radius: 0; /* pixel: sem cantos arredondados */
+  caret-color: var(--pxl-moss);
+  outline: none;
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.45);
+}
+.pixel-input::placeholder {
+  color: #5d6a48;
+}
+.pixel-input:focus-visible {
+  border-color: var(--pxl-moss);
+}
+.pixel-input.is-error {
+  border-color: var(--pxl-red);
+}
+.pixel-error {
+  min-height: 20px;
+  font-size: 17px;
+  color: var(--pxl-red);
+  text-shadow: 2px 2px 0 #000;
+}
+
+/* ---- submit: item de menu de title screen (► no hover/focus) ---- */
+.pixel-btn {
+  align-self: flex-start;
+  margin-top: 10px;
+  padding: 10px 14px 10px 30px;
+  position: relative;
+  font-family: "Press Start 2P", monospace;
+  font-size: 14px;
+  text-transform: uppercase;
+  color: var(--pxl-cream);
+  text-shadow: 3px 3px 0 #000;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.1s steps(2, jump-end);
+}
+.pixel-btn::before {
+  content: "►";
+  position: absolute;
+  left: 0;
+  opacity: 0;
+  color: var(--pxl-gold);
+}
+.pixel-btn:hover:not(:disabled),
+.pixel-btn:focus-visible {
+  color: var(--pxl-gold);
+  transform: translateX(6px);
+  outline: none;
+}
+.pixel-btn:hover:not(:disabled)::before,
+.pixel-btn:focus-visible::before {
+  opacity: 1;
+}
+.pixel-btn:disabled {
+  cursor: wait;
+  color: var(--pxl-moss-dim);
+}
+/* reticências animadas do loading */
+.pixel-dots::after {
+  content: "";
+  animation: pxl-dots 1s steps(4, jump-none) infinite;
+}
+
+/* ---- transição de saída: fade preto em degraus (sem suavização) ---- */
+.pixel-fade {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: #000;
+  opacity: 0;
+  pointer-events: none;
+}
+.pixel-fade.closing {
+  opacity: 1;
+  transition: opacity 0.55s steps(6, jump-end);
+}
+
+@keyframes pxl-dots {
+  0% { content: ""; }
+  25% { content: "."; }
+  50% { content: ".."; }
+  75%, 100% { content: "..."; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pixel-dots::after {
+    animation: none;
+  }
+  .pixel-btn {
+    transition: none;
+  }
+  .pixel-fade.closing {
+    transition-duration: 0.1s;
+  }
+}
+
+/* mobile: coluna única sobre a cena, cena ancorada no chão */
+@media (max-width: 640px) {
+  .pixel-content {
+    width: 100%;
+  }
+  .pixel-title {
+    font-size: clamp(18px, 6.5vw, 26px);
+  }
+}

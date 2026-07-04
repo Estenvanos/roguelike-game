@@ -15,13 +15,16 @@ const GameStateContext = createContext(null);
 
 export function GameStateProvider({ children }) {
   const [scene, setScene] = useState(SCENES.MENU);
+  const [username, setUsername] = useState("");
   const [net, setNet] = useState(gameClient.getPublicState());
 
   // Inscreve no gameClient: status/stats fluem pra UI sem re-render do canvas.
   useEffect(() => gameClient.subscribe(setNet), []);
 
   return (
-    <GameStateContext.Provider value={{ scene, setScene, net }}>
+    <GameStateContext.Provider
+      value={{ scene, setScene, username, setUsername, net }}
+    >
       {children}
     </GameStateContext.Provider>
   );
