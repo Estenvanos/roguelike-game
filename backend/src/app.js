@@ -4,6 +4,7 @@ import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
 import healthRoutes from "./modules/health/health.routes.js";
+import roomsRoutes from "./modules/rooms/rooms.routes.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -18,6 +19,7 @@ export function createApp() {
   app.use(express.static(path.resolve(__dirname, "../../frontend/dist")));
 
   app.use("/health", healthRoutes);
+  app.use("/rooms", roomsRoutes);
 
   return app;
 }

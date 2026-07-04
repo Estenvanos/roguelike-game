@@ -3,19 +3,21 @@ import http from "http";
 import { PORT, TICK_RATE } from "./src/config.js";
 import { logger } from "./src/logger.js";
 import { createApp } from "./src/app.js";
-import { attachSocketServer, broadcast } from "./src/modules/realtime/socket.js";
+import { attachSocketServer, broadcastToRoom } from "./src/modules/realtime/socket.js";
 import { createFixedLoop } from "./src/modules/game/game.loop.js";
-import * as game from "./src/modules/game/game.state.js";
+import { listActiveRooms } from "./src/modules/rooms/rooms.state.js";
 
 const app = createApp();
 const server = http.createServer(app);
 
 attachSocketServer(server);
 
-// Cada tick: avança o estado e transmite pra todos.
+// Cada tick: avança e transmite o estado de cada sala ativa, isoladamente.
 createFixedLoop((tick) => {
-  game.step();
-  broadcast({ type: "state", tick, players: game.snapshot() });
+  for (const room of listActiveRooms()) {
+    room.game.step();
+    broadcastToRoom(room, { type: "state", tick, players: room.game.snapshot() });
+  }
 });
 
 server.listen(PORT, () => {
