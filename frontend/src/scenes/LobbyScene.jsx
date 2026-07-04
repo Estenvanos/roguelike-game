@@ -1,11 +1,9 @@
 import { useEffect } from "react";
 import { useGame, SCENES } from "../state/GameStateContext.jsx";
 import { gameClient } from "../game/GameClient.js";
-import NetworkPill from "../ui/components/NetworkPill.jsx";
-import Button from "../ui/components/Button.jsx";
 
 export default function LobbyScene() {
-  const { setScene, net } = useGame();
+  const { setScene, net, username } = useGame();
   const connected = net.status === "connected";
 
   // Dispara a conexão ao entrar no lobby. O gameClient é idempotente.
@@ -14,37 +12,55 @@ export default function LobbyScene() {
   }, []);
 
   return (
-    <>
-      <div className="logo">🎭</div>
-      <h1 style={{ fontSize: 24 }}>Lobby</h1>
+    <div className="pixel-screen lobby-screen">
+      <div className="pixel-content lobby-content">
+        <header>
+          <h1 className="pixel-title lobby-title">Bastidores</h1>
+          <p className="pixel-tagline">
+            {username ? `Boa noite, ${username}. ` : ""}O show ainda não
+            começou.
+          </p>
+        </header>
 
-      <div className="bar">
-        <NetworkPill status={net.status} />
-        <div className="pill">
-          Sobreviventes online: <b>{net.stats.players}</b>
+        <div className="lobby-panel">
+          <p className="lobby-status">
+            <span
+              className={"lobby-dot" + (connected ? " on" : "")}
+              aria-hidden="true"
+            />
+            {connected ? "Conectado à arena" : "Ligando os holofotes…"}
+          </p>
+          <p className="lobby-count">
+            Sobreviventes na fila: <b>{net.stats.players}</b>
+          </p>
+          <p className="lobby-hint">
+            {connected
+              ? "O Empresário te espera no picadeiro. Abra outra aba pra chamar um segundo sobrevivente (coop)."
+              : "Estabelecendo conexão com o servidor autoritativo (ws://localhost:3000)…"}
+          </p>
+        </div>
+
+        <div className="lobby-actions">
+          <button
+            type="button"
+            className="pixel-btn"
+            disabled={!connected}
+            onClick={() => setScene(SCENES.GAME)}
+          >
+            Entrar na arena
+          </button>
+          <button
+            type="button"
+            className="pixel-btn ghost"
+            onClick={() => {
+              gameClient.disconnect();
+              setScene(SCENES.MENU);
+            }}
+          >
+            Voltar aos portões
+          </button>
         </div>
       </div>
-
-      <p className="hint">
-        {connected
-          ? "Conectado à arena. Entre quando estiver pronto — abra outra aba pra ter um segundo jogador coop."
-          : "Estabelecendo conexão com o servidor autoritativo (ws://localhost:3000)…"}
-      </p>
-
-      <div className="bar">
-        <Button disabled={!connected} onClick={() => setScene(SCENES.GAME)}>
-          Entrar na arena
-        </Button>
-        <Button
-          variant="ghost"
-          onClick={() => {
-            gameClient.disconnect();
-            setScene(SCENES.MENU);
-          }}
-        >
-          Voltar
-        </Button>
-      </div>
-    </>
+    </div>
   );
 }

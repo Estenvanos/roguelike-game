@@ -706,3 +706,90 @@ kbd {
     font-size: clamp(18px, 6.5vw, 26px);
   }
 }
+
+/* =========================================================================
+   Lobby "Bastidores da Tenda" — fundo /lobby.png + painel/ações em pixel.
+   Reusa .pixel-screen/.pixel-content/.pixel-btn da title screen.
+   ========================================================================= */
+.lobby-screen {
+  background: var(--pxl-ink) url("/lobby.png") center bottom / cover no-repeat;
+}
+/* scrim quente: a arte do interior da tenda é clara — escurece a coluna do
+   texto e o rodapé pra manter o creme legível */
+.lobby-screen::before {
+  background:
+    linear-gradient(90deg, rgba(18, 9, 5, 0.88) 0%, rgba(18, 9, 5, 0.6) 36%, transparent 64%),
+    linear-gradient(to top, rgba(18, 9, 5, 0.5), transparent 32%);
+}
+
+.lobby-content {
+  gap: 22px;
+}
+
+.lobby-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 16px;
+  font-size: 19px;
+  background: rgba(12, 6, 4, 0.78);
+  border: 3px solid #5a3a24;
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.45);
+}
+.lobby-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--pxl-cream);
+}
+.lobby-dot {
+  width: 10px;
+  height: 10px;
+  background: var(--pxl-gold);
+  animation: pxl-dot-blink 1s steps(2, jump-none) infinite;
+}
+.lobby-dot.on {
+  background: var(--pxl-moss);
+  animation: none;
+}
+.lobby-count {
+  color: var(--pxl-cream);
+}
+.lobby-count b {
+  color: var(--pxl-gold);
+}
+.lobby-hint {
+  font-size: 17px;
+  line-height: 1.35;
+  color: var(--pxl-moss-dim);
+}
+
+.lobby-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-items: flex-start;
+}
+/* no lobby o disabled é "aguardando conexão", não loading */
+.lobby-actions .pixel-btn:disabled {
+  cursor: not-allowed;
+}
+.pixel-btn.ghost {
+  font-size: 11px;
+  color: var(--pxl-moss-dim);
+}
+.pixel-btn.ghost:hover:not(:disabled),
+.pixel-btn.ghost:focus-visible {
+  color: var(--pxl-cream);
+}
+
+@keyframes pxl-dot-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.25; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lobby-dot {
+    animation: none;
+  }
+}
