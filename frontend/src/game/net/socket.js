@@ -5,10 +5,12 @@
 // =====================================================================
 import { WS_URL } from "../engine/constants.js";
 
-// getLag: () => ms de atraso artificial por sentido
-// onWelcome(msg), onState(msg): handlers do protocolo
+// roomId/hostToken/username: fixados na criação, mandados em join_room a
+// cada (re)conexão — connect() é reusado pelo reconnectTimer, então toda
+// reconexão automática reentra na mesma sala sozinha.
+// onWelcome(msg), onState(msg), onError(msg), onRoomClosed(msg): handlers do protocolo
 // onStatus(connected: boolean)
-export function createSocket({ getLag, onWelcome, onState, onStatus }) {
+export function createSocket({ roomId, hostToken, username, getLag, onWelcome, onState, onError, onRoomClosed, onStatus }) {
   let ws = null;
   let closed = false;
   let reconnectTimer = null;
@@ -16,7 +18,10 @@ export function createSocket({ getLag, onWelcome, onState, onStatus }) {
   function connect() {
     ws = new WebSocket(WS_URL);
 
-    ws.onopen = () => onStatus?.(true);
+    ws.onopen = () => {
+      onStatus?.(true);
+      send({ type: "join_room", roomId, hostToken, username });
+    };
 
     ws.onclose = () => {
       onStatus?.(false);
@@ -37,6 +42,8 @@ export function createSocket({ getLag, onWelcome, onState, onStatus }) {
         }
         if (msg.type === "welcome") onWelcome?.(msg);
         else if (msg.type === "state") onState?.(msg);
+        else if (msg.type === "error") onError?.(msg);
+        else if (msg.type === "room_closed") onRoomClosed?.(msg);
       }, getLag());
     };
   }

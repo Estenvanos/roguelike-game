@@ -37,6 +37,10 @@ class GameClient {
     this.stats = { tick: "—", players: 0, buffer: 0, ack: 0 };
     this.socket = null;
     this.tickTimer = null;
+    this.roomId = null;
+    this.roomName = null;
+    this.isHost = false;
+    this.error = null;
   }
 
   // ---- pub/sub pro React (só status/stats mudam a UI) ----
@@ -47,7 +51,15 @@ class GameClient {
   }
 
   getPublicState() {
-    return { status: this.status, stats: { ...this.stats }, myId: this.myId };
+    return {
+      status: this.status,
+      stats: { ...this.stats },
+      myId: this.myId,
+      roomId: this.roomId,
+      roomName: this.roomName,
+      isHost: this.isHost,
+      error: this.error,
+    };
   }
 
   emit() {
@@ -56,12 +68,20 @@ class GameClient {
   }
 
   // ---- conexão ----
-  connect() {
+  // roomId/hostToken: obtidos via REST (POST /rooms ou GET /rooms) antes de chamar isso.
+  // roomName: só pra exibição na UI, não é campo de protocolo.
+  connect({ roomId, hostToken, username, roomName } = {}) {
     if (this.socket) return; // já conectado/conectando
     this.status = "connecting";
+    this.roomId = roomId ?? null;
+    this.roomName = roomName ?? null;
+    this.error = null;
     this.emit();
 
     this.socket = createSocket({
+      roomId,
+      hostToken,
+      username,
       getLag: () => this.settings.simLag,
       onWelcome: (msg) => this.onWelcome(msg),
       onState: (msg) => this.onState(msg),
@@ -69,6 +89,8 @@ class GameClient {
         this.status = up ? "connected" : "connecting";
         this.emit();
       },
+      onError: (msg) => this.onError(msg),
+      onRoomClosed: (msg) => this.onRoomClosed(msg),
     });
 
     // Loop do cliente: 30x/s amostra input, prevê e envia.
@@ -84,8 +106,23 @@ class GameClient {
 
   onWelcome(msg) {
     this.myId = msg.id;
+    this.roomId = msg.roomId ?? this.roomId;
+    this.isHost = Boolean(msg.isHost);
     if (msg.world) this.world = { ...this.world, ...msg.world };
     this.status = "connected";
+    this.error = null;
+    this.emit();
+  }
+
+  onError(msg) {
+    this.error = msg.message || "erro desconhecido";
+    this.emit(); // não derruba conexão nem muda status — a UI decide o que fazer
+  }
+
+  onRoomClosed(msg) {
+    const reason = msg.message || "sala encerrada";
+    this.disconnect(); // já existe: para tickTimer, fecha socket, reset()
+    this.error = reason; // reset() zera error — reatribui depois
     this.emit();
   }
 

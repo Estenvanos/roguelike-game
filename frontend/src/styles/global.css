@@ -793,3 +793,76 @@ kbd {
     animation: none;
   }
 }
+
+/* ---- fluxo de criar/entrar em sala (mesma linguagem visual do lobby) ---- */
+.lobby-host-tag {
+  align-self: flex-start;
+  padding: 2px 8px;
+  font-family: "Press Start 2P", monospace;
+  font-size: 9px;
+  text-transform: uppercase;
+  color: var(--pxl-ink);
+  background: var(--pxl-gold);
+  box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.45);
+}
+
+.lobby-form,
+.lobby-join {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.lobby-room-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 220px;
+  overflow-y: auto;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+.lobby-room-empty {
+  padding: 10px 12px;
+  font-size: 17px;
+  color: var(--pxl-moss-dim);
+}
+.lobby-room-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  font: inherit;
+  font-size: 17px;
+  color: var(--pxl-cream);
+  text-align: left;
+  background: rgba(12, 6, 4, 0.78);
+  border: 3px solid #5a3a24;
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.45);
+  cursor: pointer;
+  transition: transform 0.1s steps(2, jump-end), border-color 0.1s steps(2, jump-end);
+}
+.lobby-room-card:hover,
+.lobby-room-card:focus-visible {
+  border-color: var(--pxl-moss);
+  color: var(--pxl-gold);
+  transform: translateX(4px);
+  outline: none;
+}
+.lobby-room-name {
+  font-weight: bold;
+}
+.lobby-room-count {
+  font-size: 15px;
+  color: var(--pxl-moss-dim);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lobby-room-card {
+    transition: none;
+  }
+}

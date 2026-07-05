@@ -18,3 +18,8 @@ export const INTERP_DELAY = 100; // ms no passado (~3 ticks)
 export const DEFAULT_SIM_LAG = 120; // ms/lado
 
 export const WS_URL = "ws://localhost:3000";
+
+// Relativo: em dev passa pelo proxy do Vite (vite.config.js), em prod é o
+// mesmo host que serve o build — evita CORS no POST /rooms (o backend não
+// responde preflight OPTIONS).
+export const API_URL = "";
