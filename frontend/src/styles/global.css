@@ -140,6 +140,32 @@ canvas {
   max-width: 100%;
 }
 
+/* ---- Cena de jogo: bg full-bleed com a arena, canvas sem moldura ---- */
+.game-scene {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: #060810 url("/arena.png") center / cover no-repeat;
+  padding: 12px;
+}
+
+.game-scene canvas {
+  height: 85vh;
+  width: auto;
+  aspect-ratio: 4 / 3;
+  max-width: calc(100vw - 24px);
+  max-height: calc((100vw - 24px) * 3 / 4);
+  image-rendering: pixelated;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+
 kbd {
   background: var(--panel);
   border: 1px solid var(--border);

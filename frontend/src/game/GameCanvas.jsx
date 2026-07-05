@@ -11,8 +11,6 @@ import { drawWorld, drawLabel } from "./render/world.js";
 import { sampleInterpolated } from "./net/interpolation.js";
 import { createRenderLoop } from "./engine/loop.js";
 import { INTERP_DELAY } from "./engine/constants.js";
-import { enemiesByAct, ENTITIES } from "./entities/registry.js";
-
 // Teclas aceitas -> chave interna do input.
 const KEY_MAP = {
   w: "w", a: "a", s: "s", d: "d",
@@ -61,15 +59,11 @@ export default function GameCanvas() {
   return <canvas ref={canvasRef} />;
 }
 
-// =====================================================================
-// draw — desenha o último estado. Meu player = posição PREVISTA (+ fantasma
-// translúcido do servidor). Outros = interpolados (ou crus). No rodapé, uma
-// vitrine dos inimigos/itens do manifest (valida AssetLoader + placeholders).
-// =====================================================================
+// draw — meu player = posição PREVISTA (+ fantasma translúcido do servidor).
+// Outros = interpolados (ou crus se interpolação desligada).
 function draw(ctx, canvas) {
   const gc = gameClient;
   drawWorld(ctx, canvas.width, canvas.height);
-  drawShowcase(ctx, canvas);
 
   for (const id in gc.serverPlayers) {
     const sp = gc.serverPlayers[id];
@@ -92,22 +86,3 @@ function draw(ctx, canvas) {
   }
 }
 
-// Vitrine estática: um de cada inimigo (por ato) + boss, no rodapé. Serve de
-// validação visual do pipeline de sprites até a arte/IA reais existirem.
-function drawShowcase(ctx, canvas) {
-  const row = [
-    ...enemiesByAct(1),
-    ...enemiesByAct(2),
-    ...enemiesByAct(3),
-    ENTITIES["the-impresario"],
-  ];
-  const y = canvas.height - 40;
-  const gap = canvas.width / (row.length + 1);
-  ctx.save();
-  ctx.globalAlpha = 0.85;
-  row.forEach((e, i) => {
-    const x = gap * (i + 1);
-    drawEntity(ctx, e.type, x, y);
-  });
-  ctx.restore();
-}
